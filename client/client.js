@@ -10,7 +10,7 @@ Okta = {
     //   error.
 
     requestCredential: function (options, credentialRequestCompleteCallback) {
-        
+
         // support both (options, callback) and (callback).
         if (!credentialRequestCompleteCallback && typeof options === 'function') {
             credentialRequestCompleteCallback = options;
@@ -21,11 +21,21 @@ Okta = {
 
         // Fetch the service configuration from the database
         var config = ServiceConfiguration.configurations.findOne({service: Okta.serviceName});
-        // If none exist, throw the default ServiceConfiguration error
+        // If none exist, try loading from Meteor settings else, throw the default ServiceConfiguration error
         if (!config) {
-            credentialRequestCompleteCallback &&
-            credentialRequestCompleteCallback(new ServiceConfiguration.ConfigError());
-            return;
+            //If config is not available construct one from env variables.
+            console.log("Loading Okta config from Meteor settings");
+            if(Meteor.settings && Meteor.settings.public &&  Meteor.settings.public.okta) {
+                config = {
+                    clientId : Meteor.settings.public.okta.clientId,
+                    domain : Meteor.settings.public.okta.domain
+                }
+            } else {
+                console.error("Okta serviceconfiguration error. Okta settings not found");
+                credentialRequestCompleteCallback &&
+                credentialRequestCompleteCallback(new ServiceConfiguration.ConfigError());
+                return;
+            }
         }
 
         // Generate a token to be used in the state and the OAuth flow
