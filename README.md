@@ -4,9 +4,9 @@ __An implementation of the Okta OAuth flow__
 
 ## Getting started
 
-Add the package to meteor
+Add the package to meteor (cannot add it yet)
 ```
-meteor add riffyn:okta
+meteor add roni:okta
 ```
 
 ## Basic usage
@@ -24,6 +24,6 @@ Okta.requestCredential(options, callback);
 
 ### Accounts package
 
-* [riffyn:accounts-okta](https://github.com/RiffynInc/meteor-accounts-okta)
+* [roni:accounts-okta](https://github.com/rohundhar/meteor-accounts-okta)
 
 
