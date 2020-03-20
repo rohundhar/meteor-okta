@@ -4,18 +4,17 @@ __An implementation of the Okta OAuth flow__
 
 ## Getting started
 
-Add the package to meteor
+Add the package to meteor (cannot add it yet because it is not published anywhere)
 ```
-meteor add riffyn:okta
+meteor add roni:okta
 ```
 
 ## Basic usage
 
-The usage is pretty much the same as all other OAuth flow implementations for meteor. It's inspired by the official Google meteor package.
-Basically you can use:
+The usage is pretty much the same as all other OAuth flow implementations for meteor. Basically you can use:
 
 ```javascript
-var callback = Accounts.oauth.credentialRequestCompleteHandler(callback);
+const callback = Accounts.oauth.credentialRequestCompleteHandler(callback);
 Okta.requestCredential(options, callback);
 ```
 
@@ -24,6 +23,6 @@ Okta.requestCredential(options, callback);
 
 ### Accounts package
 
-* [riffyn:accounts-okta](https://github.com/RiffynInc/meteor-accounts-okta)
+* [roni:accounts-okta](https://github.com/rohundhar/meteor-accounts-okta)
 
 

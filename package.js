@@ -1,13 +1,15 @@
 Package.describe({
-  name: 'riffyn:okta',
+  name: 'roni:okta',
   version: '0.1.0',
   summary: 'An implementation of the Okta OAuth flow.',
-  git: 'https://github.com/RiffynInc/meteor-okta',
+  git: 'https://github.com/rohundhar/meteor-okta',
   documentation: 'README.md'
 });
 
 Package.onUse(function(api) {
+  // Meteor Version 
   api.versionsFrom('1.8.0.2');
+  
   api.use('ecmascript');
   api.use('templating', 'client');
   api.use('random', 'client');

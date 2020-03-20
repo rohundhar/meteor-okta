@@ -10,7 +10,7 @@ Okta = {
     //   error.
 
     requestCredential: function (options, credentialRequestCompleteCallback) {
-        
+
         // support both (options, callback) and (callback).
         if (!credentialRequestCompleteCallback && typeof options === 'function') {
             credentialRequestCompleteCallback = options;
@@ -20,18 +20,27 @@ Okta = {
         }
 
         // Fetch the service configuration from the database
-        var config = ServiceConfiguration.configurations.findOne({service: Okta.serviceName});
+        const config = ServiceConfiguration.configurations.findOne({service: Okta.serviceName});
         // If none exist, throw the default ServiceConfiguration error
+
+        // Note: The code that is commented out in this block would, if there is no configuration
+        // found, allow the client to define the configuration from a simple popup box. I highly
+        // recommend for production releases for this code to remain inactive and to configure
+        // this package safely from the meteor server 
+
         if (!config) {
-            credentialRequestCompleteCallback &&
-            credentialRequestCompleteCallback(new ServiceConfiguration.ConfigError());
-            return;
+            // credentialRequestCompleteCallback &&
+            // credentialRequestCompleteCallback(new ServiceConfiguration.ConfigError());
+            //return;
+            throw new ServiceConfiguration.ConfigError();
         }
 
         // Generate a token to be used in the state and the OAuth flow
-        var credentialToken = Random.secret(),
-            loginStyle = "redirect";   //other option is "popup" which opens a pop up window
+        const credentialToken = Random.secret();
 
+        // Other option is "popup" which opens a pop up window. For my purposes, I've chosen
+        // to force the redirect loginStyle regardless of configuration
+        const loginStyle = "redirect";  
 
         OAuth.launchLogin({
             loginService: Okta.serviceName,
@@ -47,17 +56,17 @@ Okta = {
 var getLoginUrlOptions = function(loginStyle, credentialToken, config, options) {
 
     // Per default permissions we need the user to be able to sign in
-    var scope = ['openid email profile'];
+    let scope = ['openid email profile'];
     // If requestOfflineToken is set to true, we request a refresh token through the wl.offline_access scope
     if (options.requestOfflineToken) {
         scope.push('wl.offline_access');
     }
-    // All other request permissions in the options object is afterward parsed
+    // All other request permissions in the options object is parsed afterward
     if (options.requestPermissions) {
         scope = _.union(scope, options.requestPermissions);
     }
 
-    var loginUrlParameters = {};
+    const loginUrlParameters = {};
     // First insert the ServiceConfiguration values
     if (config.loginUrlParameters){
         _.extend(loginUrlParameters, config.loginUrlParameters);
@@ -68,31 +77,36 @@ var getLoginUrlOptions = function(loginStyle, credentialToken, config, options) 
         _.extend(loginUrlParameters, options.loginUrlParameters);
     }
     // Make sure no url parameter was used as an option or config
-    var illegal_parameters = ['response_type', 'client_id', 'scope', 'redirect_uri', 'state'];
+    const illegal_parameters = ['response_type', 'client_id', 'scope', 'redirect_uri', 'state'];
     _.each(_.keys(loginUrlParameters), function (key) {
         if (_.contains(illegal_parameters, key)) {
-            throw new Error('Okta.requestCredential: Invalid loginUrlParameter: ' + key);
+            throw new Meteor.Error('okta-error', 'Okta.requestCredential: Invalid loginUrlParameter: ' + key);
         }
     });
 
-    //in your router get the initial url the user is trying to access and
-    //redirect the user back to that uri on successful authentication
-    //in this case user is being redirected to /library/processes
-    fromWhere = Session.get('fromWhere') || '/library/processes';
-    //delete the leading / because Meteor.absouluteURL adds one too
+
+    // Once we've actually completed the authentication, we will need to set in the
+    // options where to return once we've finished. We will allow a session variable
+    // called 'routeAfterOktaOauth' to be uniquely defined, otherwise it will default
+    // to the root URL of the site. The format should be "/route/after/okta/here"
+    fromWhere = Session.get('routeAfterOktaOauth') || '/';
+
+    // Delete the leading / because Meteor.absouluteURL adds one too
     fromWhere = fromWhere.replace('/','');
     options.redirectUrl = Meteor.absoluteUrl(fromWhere);
+
     // Create all the necessary url options
     _.extend(loginUrlParameters, {
         response_type: 'code',
         client_id:  config.clientId,
-        scope: scope.join(' '), // space delimited, everything is later urlencoded!
+        scope: scope.join(' '), // space delimited, everything is urlencoded later
         redirect_uri: OAuth._redirectUri(Okta.serviceName, config),
-        nonce: Random.secret(),
+	    nonce: Random.secret(),
         state: OAuth._stateParam(loginStyle, credentialToken, options.redirectUrl)
     });
 
-    var oktacall =  'https://' + config.domain + '/oauth2/v1/authorize?' +
+    // Build the actual urlencoded complete URL and return it so that we can launch login
+    const oktacall =  'https://' + config.domain + '/oauth2/v1/authorize?' +
         _.map(loginUrlParameters, function(value, param){
             return encodeURIComponent(param) + '=' + encodeURIComponent(value);
         }).join('&');
